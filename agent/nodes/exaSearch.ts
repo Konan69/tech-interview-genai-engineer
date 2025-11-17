@@ -4,6 +4,7 @@ import { retryAsync } from '@/lib/result';
 
 const MAX_RESULTS = 8;
 const DEFAULT_SOURCE_TITLE = 'Untitled Source';
+const EXA_TOOL_SLUG = 'EXA_SEARCH';
 
 export async function exaSearch(
   state: AgentStateType,
@@ -18,7 +19,7 @@ export async function exaSearch(
 
   const searchResult = await retryAsync(
     () =>
-      composio.tools.execute('EXA', {
+      composio.tools.execute(EXA_TOOL_SLUG, {
         userId,
         arguments: {
           query: state.question,
