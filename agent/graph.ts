@@ -17,7 +17,7 @@ export function createResearchGraph(composio: Composio, userId: string, recipien
     .addNode('plan', planner)
     .addNode('search', (state: AgentStateType) => exaSearch(state, composio, userId))
     .addNode('summarize', summarizer)
-    .addNode('draft', drafter)
+    .addNode('compose', drafter)
     .addNode('save', (state: AgentStateType) => googleSaver(state, composio, userId))
     .addNode('email', (state: AgentStateType) =>
       gmailDrafter(state, composio, userId, recipientEmail || '')
@@ -26,8 +26,8 @@ export function createResearchGraph(composio: Composio, userId: string, recipien
     .addEdge('__start__', 'plan')
     .addEdge('plan', 'search')
     .addEdge('search', 'summarize')
-    .addEdge('summarize', 'draft')
-    .addConditionalEdges('draft', (state: AgentStateType) => {
+    .addEdge('summarize', 'compose')
+    .addConditionalEdges('compose', (state: AgentStateType) => {
       if (state.status === 'error') {
         return END;
       }
