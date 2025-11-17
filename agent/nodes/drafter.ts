@@ -1,4 +1,5 @@
 import { ChatOpenAI } from '@langchain/openai';
+import type { BaseMessageLike } from '@langchain/core/messages';
 import { AgentStateType } from '../state';
 import { retryAsync } from '@/lib/result';
 import { z } from 'zod';
@@ -27,7 +28,7 @@ export async function drafter(state: AgentStateType): Promise<Partial<AgentState
     )
     .join('\n');
 
-  const prompt = [
+  const messages = [
     [
       'system',
       `You are a research assistant. Draft a markdown report with sections: Answer, Key Findings, Sources.
@@ -43,9 +44,9 @@ ${state.notes || 'N/A'}
 Sources:
 ${sourcesText}`
     ]
-  ] as const;
+  ] as BaseMessageLike[];
 
-  const result = await retryAsync(() => structuredDrafter.invoke(prompt), 2);
+  const result = await retryAsync(() => structuredDrafter.invoke(messages), 2);
 
   return result.match(
     (payload) => {
