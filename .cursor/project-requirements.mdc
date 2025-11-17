@@ -1,0 +1,111 @@
+---
+description: Project requirements for LangGraph Deep Research Agent (3-hour challenge)
+globs:
+alwaysApply: false
+---
+
+# LangGraph Deep Research Agent - Project Requirements
+
+## Context
+
+3-hour MVP challenge. Focus on core functionality. Document trade-offs made under time constraints in `approach.md`.
+
+## High-Priority Requirements (Heavily Weighted)
+
+### 1. OAuth Implementation (20% of evaluation)
+
+- **End-user OAuth for Google Drive/Docs/Gmail** (not just API keys)
+- Allow any user to authenticate with their own Google account
+- Secure token handling and session storage
+- User can connect their credentials and write to their own Drive/Docs
+
+### 2. Composio MCP Integrations (20% total)
+
+- **Exa.ai (5%)**: Web search + content extraction via Composio MCP
+- **Google Docs (5%)**: Create/update doc with sections (Answer, Key Findings, Sources)
+- **Google Drive (5%)**: Place doc in user-selected folder (create if missing)
+- **Gmail (5%)**: Pre-draft email via Composio MCP (user can share the doc)
+
+### 3. LangGraph Orchestration (15%)
+
+- Stateful agent with proper node definitions and state management
+- Research loop: plan → search → synthesize → cite
+- Clear separation of nodes and tool wrappers
+- Conditional routing with guardrails (max iterations, budgets)
+- Short-term memory within session
+- Track sources across nodes
+
+### 4. Frontend Interface (10%)
+
+- Single-page Next.js UI with chat-style interface
+- Query input and Run button
+- Display step logs (planner decisions) in real-time
+- Show sources preview
+- Return clickable Google Doc link
+- Clean, usable MVP (design polish not required)
+
+## Core Implementation Details
+
+### LangGraph Nodes
+
+- Determine nodes as needed (suggested: planner, search, summarizer, drafter, saver)
+- Maintain state: query, sources[], notes, draft, docUrl, iterations, status
+
+### Error Handling & Resilience (5%)
+
+- Implement timeouts and retries
+- Gracefully handle API failures (rate limits, auth errors)
+- Meaningful error messages
+- Sensible fallbacks
+
+### Configuration Management (5%)
+
+- Environment-based config via `.env` (no secrets in code)
+- MCP config files for each integration
+- Clean separation of config and logic
+
+### API Layer
+
+- Route to invoke agent (e.g., `/api/run-agent`)
+- Accept: `{ query: string, folderId?: string, accessToken?: string }`
+- Return: status, docUrl, logs, sources
+
+## Code Quality (15%)
+
+### Organization (10%)
+
+- Follow suggested structure: `app/`, `src/agent/nodes/`, `mcp/`, `server/`
+- Small, readable modules with proper TypeScript typing
+- Clear function/variable names
+- Separation of concerns
+
+### Documentation (5%)
+
+- `approach.md`: graph design, error handling, trade-offs, limitations, future work
+- `README.md`: setup, run, deploy instructions
+- Comments on key implementation choices
+
+## Deployment
+
+- Deploy to Vercel (or public URL)
+- Live link required for submission
+- All dependencies in package.json
+
+## Sample Flow
+
+Query: "Research main sourcing platforms for data-driven VCs. Pre-draft email to georgiy@enteroverdrive.com to share the doc."
+
+Expected:
+
+1. User authenticates with Google (OAuth)
+2. Agent searches → synthesizes → creates structured Doc
+3. Doc placed in user's selected Drive folder
+4. Gmail draft created with doc link
+5. Step logs visible during execution
+6. Returns clickable Doc URL
+
+## Deliverables
+
+1. Live deployed link (Vercel preferred)
+2. GitHub repo with README.md and approach.md
+3. Working OAuth flow + Google Doc generation + Gmail draft

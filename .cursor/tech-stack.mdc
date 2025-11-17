@@ -1,0 +1,210 @@
+---
+description: Technology stack options for LangGraph Deep Research Agent (Python or Next.js)
+globs:
+alwaysApply: false
+---
+
+# Technology Stack
+
+## Framework Choice
+
+You may implement this project using Python or Next.js/React. Up to you!
+
+---
+
+### Backend Framework
+
+#### FastAPI or Flask
+
+- **Features**:
+  - REST endpoints (`/api/run-agent`)
+
+---
+
+### Frontend Framework
+
+#### Next.js 14
+
+- **Purpose**: Full-stack React framework for frontend and API routes
+- **Key Features**:
+  - App Router for routing
+  - Server Components for performance
+  - API Routes for backend
+  - Built-in TypeScript support
+
+#### React
+
+- **Version**: 18+ (with Next.js 14)
+- **Purpose**: UI components
+- **Patterns**:
+  - Client Components for interactivity
+  - Hooks for state management
+
+#### Tailwind CSS
+
+- **Purpose**: Styling
+
+### Next.js Dependencies
+
+```json
+{
+  "dependencies": {
+    "next": "^14.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "@langchain/langgraph": "latest",
+    "@langchain/core": "latest",
+    "@langchain/openai": "latest",
+    "openai": "^4.0.0"
+  }
+}
+```
+
+---
+
+## Shared: Agent Orchestration
+
+### LangGraph
+
+- **Python Package**: `langgraph`
+- **JavaScript Package**: `@langchain/langgraph`
+- **Purpose**: Stateful agent orchestration with nodes and edges
+- **Key Features**:
+  - StateGraph for maintaining agent state
+  - Conditional edges for decision points
+  - Built-in support for iteration and loops
+  - Composable node architecture
+
+### LangChain
+
+- **Python Packages**: `langchain-core`, `langchain-openai`
+- **JavaScript Packages**: `@langchain/core`, `@langchain/openai`
+- **Purpose**: LLM integration and agent utilities
+- **Key Features**:
+  - OpenAI integration for GPT models
+  - Prompt templates and formatting
+  - Tool calling interfaces
+
+---
+
+## Shared: MCP Integrations (Both Stacks)
+
+### Composio MCP (Critical - 20% of grade)
+
+- **Python SDK**: `composio-core` or `composio-langchain`
+- **JavaScript SDK**: `composio-core`
+- **Purpose**: Model Context Protocol server for tool integrations
+- **Required Integrations**:
+  - **Exa.ai (5%)**: Web search and content extraction
+  - **Google Docs (5%)**: Document creation and formatting
+  - **Google Drive (5%)**: Folder management and file placement
+  - **Gmail (5%)**: Draft email creation
+
+### Exa.ai
+
+- **Purpose**: Semantic web search optimized for AI
+- **Features**:
+  - Semantic search
+  - Content extraction from URLs
+  - Configurable result limits
+
+---
+
+## Shared: LLM Provider
+
+### OpenAI
+
+- **Models Available**: GPT-4, GPT-4-turbo, GPT-3.5-turbo
+- **Purpose**: Planning, summarization, drafting
+
+---
+
+## Environment Configuration
+
+### Python Requirements (Option A)
+
+```txt
+langgraph
+langchain-core
+langchain-openai
+fastapi
+uvicorn
+python-dotenv
+composio-core
+authlib
+google-auth-oauthlib
+```
+
+### Next.js Dependencies (Option B)
+
+Create `package.json`:
+
+```json
+{
+  "dependencies": {
+    "next": "^14.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "@langchain/langgraph": "latest",
+    "@langchain/core": "latest",
+    "@langchain/openai": "latest",
+    "composio-core": "latest",
+    "next-auth": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.0.0",
+    "typescript": "^5.0.0",
+    "tailwindcss": "^3.0.0"
+  }
+}
+```
+
+### Environment Variables (Both Stacks)
+
+Required in `.env`:
+
+```env
+OPENAI_API_KEY=
+COMPOSIO_API_KEY=
+EXA_API_KEY=
+NEXT_PUBLIC_BASE_URL=  # or APP_URL for Python
+```
+
+---
+
+## API Integrations (Both Stacks)
+
+### External APIs
+
+1. **OpenAI API**: LLM completions
+2. **Composio MCP**: Tool orchestration layer (handles OAuth)
+3. **Exa.ai API**: Web search (via Composio MCP)
+4. **Google Workspace APIs**: Docs, Drive, Gmail (via Composio MCP)
+
+### Rate Limits to Consider
+
+- OpenAI: ~3,500 requests/min (tier dependent)
+- Exa.ai: Check plan limits
+- Google APIs: 100 requests/100 seconds per user
+- Composio: Check plan limits
+
+---
+
+## Architecture Pattern
+
+### Python Architecture
+
+1. **Presentation Layer**: Streamlit/Gradio or static frontend
+2. **API Layer**: FastAPI routes (`/api/run-agent`)
+3. **Agent Layer**: LangGraph orchestration (`src/agent/`)
+4. **Integration Layer**: Composio MCP tool wrappers
+5. **External Services**: OpenAI, Exa, Google APIs (via Composio)
+
+### Next.js Architecture
+
+1. **Presentation Layer**: React UI components (`app/`)
+2. **API Layer**: Next.js API routes (`app/api/`)
+3. **Agent Layer**: LangGraph orchestration (`src/agent/`)
+4. **Integration Layer**: Composio MCP tool wrappers
+5. **External Services**: OpenAI, Exa, Google APIs (via Composio)

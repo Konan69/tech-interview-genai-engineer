@@ -1,0 +1,92 @@
+---
+description: Development rules for both Python and Next.js implementations
+globs:
+alwaysApply: false
+---
+
+# Development Rules & Best Practices
+
+## Code Style
+
+### Language-Specific Guidelines
+
+**For TypeScript/Next.js:**
+
+- Use TypeScript with strict mode enabled
+- Never use `any` type; prefer proper typing or `unknown`
+- Use camelCase for variables/functions, PascalCase for types/components
+
+**For Python:**
+
+- Use Python 3.10+ with type hints
+- Use snake_case for variables/functions, PascalCase for classes
+- No `Any` type; use specific types from `typing` module
+
+### Naming Conventions
+
+**Both Languages:**
+
+- Use **UPPER_SNAKE_CASE** for constants and environment variables
+- Use descriptive names that explain intent (e.g., `searchResults` or `search_results`, `formatDocument` or `format_document`)
+
+### File Organization
+
+- Keep files small and focused (single responsibility)
+- Group related functionality in folders
+- Use `__init__.py` (Python) or `index.ts` (TypeScript) for module exports
+
+## LangGraph Patterns
+
+### Node Implementation
+
+- Each node should be a pure function that takes state and returns new state
+- Nodes should be composable and testable in isolation
+- Handle errors within nodes and return them in state
+- Log key decisions and transitions for debugging
+
+### State Management
+
+- **TypeScript**: Define clear state interface with TypeScript
+- **Python**: Use TypedDict or Pydantic models for state definition
+- Include metadata: iteration count, timestamps, status
+
+### Graph Structure
+
+- Use conditional edges for decision points
+- Implement clear stopping criteria
+- Add timeouts and max iteration guards
+
+### Documentation
+
+- Document all design decisions in `approach.md`
+- Explain trade-offs made under time constraints
+- Note known limitations and future improvements
+- Provide clear setup instructions
+
+## Performance
+
+### Token Management
+
+- Track token usage across calls
+- Trim content to stay within limits
+
+## Deployment
+
+### Deployment Platform Requirements
+
+**For Next.js (Vercel preferred):**
+
+- Keep dependencies minimal and compatible
+
+**For Python (Vercel/Railway/Render):**
+
+- Include `requirements.txt` or `pyproject.toml`
+
+**For All**
+
+- Test deployment before submitting
+
+### Documentation
+
+- Document environment variable setup
+- Include example queries for testing
