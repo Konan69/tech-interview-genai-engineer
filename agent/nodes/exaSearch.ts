@@ -1,63 +1,42 @@
-import { Composio } from '@composio/core';
+import type { StructuredToolInterface } from '@langchain/core/tools';
 import { AgentStateType } from '../state';
-import { retryAsync } from '@/lib/result';
+import { callExaTool } from './exaUtils';
 
+const EXA_SEARCH_TOOL_NAME = 'EXA_SEARCH';
 const MAX_RESULTS = 8;
-const DEFAULT_SOURCE_TITLE = 'Untitled Source';
-const EXA_TOOL_SLUG = 'EXA_SEARCH';
 
 export async function exaSearch(
   state: AgentStateType,
-  composio: Composio,
+  composio: unknown,
   userId: string,
+  tools: Record<string, StructuredToolInterface>,
   connectedAccountId?: string
 ): Promise<Partial<AgentStateType>> {
   if (state.status === 'error') {
     return {};
   }
 
-  console.log('[EXA_SEARCH] Searching for:', state.question);
-  console.log('[EXA_SEARCH] Connected account ID:', connectedAccountId);
-
-  const searchResult = await retryAsync(
-    () =>
-      composio.tools.execute(
-        EXA_TOOL_SLUG,
-        {
-          userId,
-          ...(connectedAccountId && { connectedAccountId }),
-          arguments: {
-            query: state.question,
-            numResults: MAX_RESULTS
-          }
-        }
-      ),
-    3
-  );
-
-  return searchResult.match(
-    (result) => {
-      const data = result.data as Record<string, unknown>;
-      const results = (data?.results as Array<Record<string, unknown>>) || [];
-
-      const sources = results.slice(0, MAX_RESULTS).map((r) => ({
-        url: (r.url as string) || '',
-        title: (r.title as string) || DEFAULT_SOURCE_TITLE,
-        snippet: (r.snippet as string) || '',
-        content: ((r.text || r.snippet) as string) || ''
-      }));
-
-      console.log('[EXA_SEARCH] Found sources:', sources.length);
-
-      return {
-        sources,
-        status: 'running' as const,
-        error: null
-      };
-    },
-    (error) => ({
+  const tool = tools[EXA_SEARCH_TOOL_NAME];
+  if (!tool) {
+    return {
       status: 'error' as const,
-      error: `Search failed: ${error.message}`
-    })
-  );
+      error: `Tool ${EXA_SEARCH_TOOL_NAME} not found. Available: ${Object.keys(tools).join(', ')}`
+    };
+  }
+
+  try {
+    const { sources } = await callExaTool(tool, {
+      query: state.question,
+      numResults: MAX_RESULTS
+    });
+
+    return {
+      sources: sources.slice(0, MAX_RESULTS)
+    };
+  } catch (error) {
+    return {
+      status: 'error' as const,
+      error: error instanceof Error ? error.message : String(error)
+    };
+  }
 }

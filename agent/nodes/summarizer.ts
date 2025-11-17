@@ -34,8 +34,6 @@ Provide short bullet notes that the drafting step can rely on.`;
       const summary = aiMessageToString(response);
       const notes = [state.notes, summary].filter(Boolean).join('\n\n').trim();
 
-      console.log('[SUMMARIZER]', summary);
-
       return {
         notes,
         status: 'running' as const,

@@ -50,8 +50,6 @@ ${sourcesText}`
 
   return result.match(
     (payload) => {
-      console.log('[DRAFTER] Created draft, confidence:', payload.confidence.toFixed(2));
-
       return {
         draft: payload.draft,
         confidence: payload.confidence,

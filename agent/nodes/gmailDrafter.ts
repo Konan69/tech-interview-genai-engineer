@@ -18,8 +18,6 @@ export async function gmailDrafter(
     };
   }
 
-  console.log('[GMAIL_DRAFTER] Creating draft for:', recipientEmail);
-
   const subject = `Research Complete: ${state.question.slice(0, 50)}`;
   const body = `Hi,
 
@@ -47,8 +45,6 @@ Best regards`;
     (result) => {
       const data = result.data as Record<string, unknown>;
       const gmailDraftId = (data?.id as string) || '';
-
-      console.log('[GMAIL_DRAFTER] Draft created:', gmailDraftId);
 
       return {
         gmailDraftId

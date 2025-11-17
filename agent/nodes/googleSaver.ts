@@ -13,92 +13,36 @@ export async function googleSaver(
     return {};
   }
 
-  console.log('[GOOGLE_SAVER] Creating document...');
+  // NOTE: Skipping Google Drive operations for now - we want to display the draft in the UI instead
+  // TODO: Re-enable Google Docs/Drive saving when ready
 
-  const title = `Research - ${state.question.slice(0, 50)}`;
+  // Google Docs creation is skipped - we'll show the draft content directly in the UI
+  // const title = `Research - ${state.question.slice(0, 50)}`;
+  // const docCreation = await retryAsync(
+  //   () =>
+  //     composio.tools.execute('GOOGLEDOCS_CREATE_DOCUMENT', {
+  //       userId,
+  //       arguments: {
+  //         title,
+  //         content: state.draft
+  //       }
+  //     }),
+  //   3
+  // );
 
-  const docCreation = await retryAsync(
-    () =>
-      composio.tools.execute('GOOGLEDOCS_CREATE_DOCUMENT', {
-        userId,
-        arguments: {
-          title,
-          content: state.draft
-        }
-      }),
-    3
-  );
+  // Google Drive folder creation and file moving is skipped
+  // let folderId = process.env.GOOGLE_DRIVE_FOLDER_ID || '';
+  // if (!folderId) {
+  //   const folderName = process.env.GOOGLE_DRIVE_FOLDER_NAME || DEFAULT_FOLDER_NAME;
+  //   const folderResult = await retryAsync(...);
+  //   ...
+  // }
 
-  return docCreation.match(
-    async (docResult) => {
-      const data = docResult.data as Record<string, unknown>;
-      const docUrl = (data?.documentUrl as string) || '';
-      const docId =
-        (data?.documentId as string) || (data?.id as string) || extractIdFromUrl(docUrl);
-
-      let folderId = process.env.GOOGLE_DRIVE_FOLDER_ID || '';
-
-      if (!folderId) {
-        const folderName = process.env.GOOGLE_DRIVE_FOLDER_NAME || DEFAULT_FOLDER_NAME;
-        const folderResult = await retryAsync(
-          () =>
-            composio.tools.execute('GOOGLEDRIVE_CREATE_FOLDER', {
-              userId,
-              arguments: {
-                name: folderName
-              }
-            }),
-          2
-        );
-
-        folderId = await folderResult.match(
-          (folderResponse) => {
-            const folderData = folderResponse.data as Record<string, unknown>;
-            return (folderData?.id as string) || '';
-          },
-          (error) => {
-            console.warn('[GOOGLE_SAVER] Unable to create folder:', error);
-            return '';
-          }
-        );
-      }
-
-      if (docId && folderId) {
-        await retryAsync(
-          () =>
-            composio.tools.execute('GOOGLEDRIVE_MOVE_FILE', {
-              userId,
-              arguments: {
-                fileId: docId,
-                folderId
-              }
-            }),
-          2
-        ).match(
-          () => {
-            console.log('[GOOGLE_SAVER] Doc moved to folder');
-            return undefined;
-          },
-          (error) => {
-            console.warn('[GOOGLE_SAVER] Failed to move doc:', error);
-            return undefined;
-          }
-        );
-      }
-
-      console.log('[GOOGLE_SAVER] Doc created:', docUrl);
-
-      return {
-        docUrl,
-        status: 'running' as const,
-        error: null
-      };
-    },
-    (error) => ({
-      status: 'error' as const,
-      error: `Google Docs save failed: ${error.message}`
-    })
-  );
+  // Return state unchanged - the draft will be displayed in the UI
+  return {
+    status: 'running' as const,
+    error: null
+  };
 }
 
 function extractIdFromUrl(url: string): string {

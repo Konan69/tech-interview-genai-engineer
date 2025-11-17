@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Activity, FileText, Loader2, MailPlus, Sparkles } from 'lucide-react';
+import { Activity, FileText, Loader2, MailPlus, Sparkles, Copy, Check } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -13,9 +13,11 @@ interface AgentResult {
   success?: boolean;
   docUrl?: string;
   gmailDraftId?: string;
+  draft?: string;
   needsAuth?: boolean;
   redirectUrl?: string;
   error?: string;
+  logs?: Array<{ step: string; msg: string }>;
 }
 
 export default function Home() {
@@ -24,6 +26,7 @@ export default function Home() {
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<AgentResult | null>(null);
   const [authRedirectUrl, setAuthRedirectUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const { userId, logs, addLog, clearLogs } = useAgentStore();
 
 
@@ -66,6 +69,12 @@ export default function Home() {
 
     if (data.success) {
       addLog('COMPLETE', 'Research complete!');
+      // Process logs from API response if available
+      if (data.logs && Array.isArray(data.logs)) {
+        data.logs.forEach((log) => {
+          addLog(log.step, log.msg);
+        });
+      }
       setResult(data);
     } else {
       addLog('ERROR', data.error || 'Unknown error');
@@ -155,11 +164,40 @@ export default function Home() {
               <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
                 <div className="space-y-2">
                   <Label htmlFor="query">Research Brief</Label>
+                  <div className="rounded-lg border border-border/50 bg-muted/30 p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="flex-1 text-sm text-muted-foreground">
+                        Please research the main sourcing platforms for data driven VCs
+                      </p>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={async () => {
+                          const text = "Please research the main sourcing platforms for data driven VCs.";
+                          await navigator.clipboard.writeText(text);
+                          setCopied(true);
+                          setTimeout(() => setCopied(false), 2000);
+                        }}
+                        className="h-7 gap-1.5 text-xs shrink-0"
+                      >
+                        {copied ? (
+                          <>
+                            <Check className="size-3" /> Copied
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="size-3" /> Copy
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
                   <Textarea
                     id="query"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Please research the main sourcing platforms for data driven VCs. Return a list of platforms and a short description about them. Cite sources. After you're done, pre-draft an email to georgiy@enteroverdrive.com to share the doc."
+                    placeholder="Enter your research query here..."
                   />
                 </div>
                 <div className="space-y-2">
@@ -244,19 +282,31 @@ export default function Home() {
                 </div>
               </div>
 
-              {result?.docUrl ? (
+              {result?.success ? (
                 <div className="mt-4 space-y-4 text-sm">
-                  <div className="rounded-2xl border border-border/70 bg-background/80 px-4 py-3">
-                    <p className="text-xs uppercase text-muted-foreground">Google Doc</p>
-                    <a
-                      href={result.docUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-1 inline-flex items-center gap-2 text-base font-semibold text-primary underline-offset-4 hover:underline"
-                    >
-                      Open research output
-                    </a>
-                  </div>
+                  {result.draft && (
+                    <div className="rounded-2xl border border-border/70 bg-background/80 px-4 py-3">
+                      <p className="text-xs uppercase text-muted-foreground">Research Draft</p>
+                      <div className="mt-3 max-h-96 overflow-y-auto rounded-lg border border-border/50 bg-background/50 p-4">
+                        <pre className="whitespace-pre-wrap font-mono text-xs text-foreground">
+                          {result.draft}
+                        </pre>
+                      </div>
+                    </div>
+                  )}
+                  {result.docUrl && (
+                    <div className="rounded-2xl border border-border/70 bg-background/80 px-4 py-3">
+                      <p className="text-xs uppercase text-muted-foreground">Google Doc</p>
+                      <a
+                        href={result.docUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 inline-flex items-center gap-2 text-base font-semibold text-primary underline-offset-4 hover:underline"
+                      >
+                        Open research output
+                      </a>
+                    </div>
+                  )}
                   {result.gmailDraftId && (
                     <div className="rounded-2xl border border-border/70 bg-background/80 px-4 py-3">
                       <p className="text-xs uppercase text-muted-foreground">Gmail Draft</p>

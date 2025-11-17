@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { Composio } from '@composio/core';
+import { Composio, AuthScheme } from '@composio/core';
+import { LangchainProvider } from '@composio/langchain';
 import { createResearchGraph } from '@/agent/graph';
 
 const GMAIL_AUTH_CONFIG_ID = 'ac_JXipOk43oHuc';
@@ -7,8 +8,11 @@ const EXA_AUTH_CONFIG_ID = 'ac_PhR4VbLfO6Za';
 
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
+  provider: new LangchainProvider(),
   toolkitVersions: {
-    EXA: 'latest'
+    gmail: '20251027_00',
+    googledocs: '20251027_00',
+    googledrive: '20251027_00' // Using same format as other toolkits - update if needed
   }
 });
 
@@ -23,8 +27,6 @@ async function getOrCreateConnection(userId: string, authConfigId: string) {
   // If connection exists, return it
   if (existingConnections.items && existingConnections.items.length > 0) {
     const connection = existingConnections.items[0];
-    console.log('[AUTH] Using existing connection:', connection.id);
-    console.log('[AUTH] Connection toolkit:', connection.toolkit?.slug);
     return {
       connectionId: connection.id,
       needsAuth: false
@@ -32,20 +34,57 @@ async function getOrCreateConnection(userId: string, authConfigId: string) {
   }
 
   // Otherwise, create new connection using link
-  console.log('[AUTH] No active connection found. Creating link...');
   const connectionRequest = await composio.connectedAccounts.link(
     userId,
     authConfigId
   );
 
   const redirectUrl = connectionRequest.redirectUrl;
-  console.log('[AUTH] Redirect URL:', redirectUrl);
 
   // Return the redirect URL for the user to authenticate
   return {
     connectionId: null,
     needsAuth: true,
     redirectUrl
+  };
+}
+
+async function getOrCreateExaConnection(userId: string, authConfigId: string) {
+  // Check for existing connections first
+  const existingConnections = await composio.connectedAccounts.list({
+    userIds: [userId],
+    authConfigIds: [authConfigId],
+    statuses: ['ACTIVE']
+  });
+
+  // If connection exists, delete it to recreate with correct auth
+  if (existingConnections.items && existingConnections.items.length > 0) {
+    const connection = existingConnections.items[0];
+    try {
+      await composio.connectedAccounts.delete(connection.id);
+    } catch (deleteError) {
+      // Silently fail - will create new connection anyway
+    }
+  }
+
+  // Exa uses API Key authentication - no redirect needed
+  if (!process.env.EXA_API_KEY) {
+    throw new Error('EXA_API_KEY environment variable is required');
+  }
+
+  const connectionRequest = await composio.connectedAccounts.initiate(
+    userId,
+    authConfigId,
+    {
+      config: AuthScheme.APIKey({
+        api_key: process.env.EXA_API_KEY
+      })
+    }
+  );
+
+  return {
+    connectionId: connectionRequest.id,
+    needsAuth: false
   };
 }
 
@@ -62,27 +101,38 @@ export async function POST(req: Request) {
   try {
     // Get or create connections for required services
     const gmailAuthResult = await getOrCreateConnection(userId, GMAIL_AUTH_CONFIG_ID);
-    const exaAuthResult = await getOrCreateConnection(userId, EXA_AUTH_CONFIG_ID);
+    const exaAuthResult = await getOrCreateExaConnection(userId, EXA_AUTH_CONFIG_ID);
 
-    if (gmailAuthResult.needsAuth || exaAuthResult.needsAuth) {
+    // Only Gmail needs OAuth redirect, Exa uses API Key (immediate)
+    if (gmailAuthResult.needsAuth) {
       return NextResponse.json({
         needsAuth: true,
-        redirectUrl: gmailAuthResult.redirectUrl || exaAuthResult.redirectUrl
+        redirectUrl: gmailAuthResult.redirectUrl
       });
     }
 
-    // Get the connected account to verify it's active
+    // Get the connected account and toolkit to find available versions
     const exaConnection = await composio.connectedAccounts.get(exaAuthResult.connectionId!);
-    console.log('[AUTH] Exa connection details:', {
-      id: exaConnection.id,
-      status: exaConnection.status,
-      toolkit: exaConnection.toolkit?.slug
+
+    // Check if connection is ACTIVE
+    if (exaConnection.status !== 'ACTIVE') {
+      return NextResponse.json({
+        error: `EXA connection not active: ${exaConnection.status}. Please check your API key and auth config.`
+      }, { status: 400 });
+    }
+
+    // Get LangChain-compatible tools for the user
+    const allTools = await composio.tools.get(userId, {
+      tools: ['EXA_ANSWER', 'EXA_SEARCH', 'EXA_FIND_SIMILAR', 'GMAIL_CREATE_EMAIL_DRAFT', 'GOOGLEDOCS_CREATE_DOCUMENT']
     });
 
-    // Create graph with composio instance and connection IDs
+    // Create graph with composio instance, tools, and connection IDs
+    // Note: Type assertion needed because Composio with LangchainProvider has different type than expected
+    // and tools from LangchainProvider return LangChain-compatible tools
     const graph = createResearchGraph(
-      composio,
+      composio as unknown as Composio,
       userId,
+      allTools as unknown as Parameters<typeof createResearchGraph>[2],
       recipientEmail,
       exaAuthResult.connectionId!
     );
@@ -114,12 +164,14 @@ export async function POST(req: Request) {
       success: true,
       docUrl: result.docUrl,
       gmailDraftId: result.gmailDraftId,
-      sources: result.sources
+      sources: result.sources,
+      draft: result.draft,
+      logs: []
     });
   } catch (err) {
-    console.error('[ERROR]:', err);
+    const errorMessage = err instanceof Error ? err.message : String(err);
     return NextResponse.json(
-      { error: 'Something went wrong!' },
+      { error: `Something went wrong: ${errorMessage}` },
       { status: 500 }
     );
   }
