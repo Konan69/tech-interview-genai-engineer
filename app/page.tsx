@@ -1,29 +1,20 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
-import { useTheme } from 'next-themes';
-import {
-  Activity,
-  FileText,
-  Loader2,
-  MailPlus,
-  Sparkles,
-  Sun,
-  Moon
-} from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Activity, FileText, Loader2, MailPlus, Sparkles } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { cn } from '@/lib/utils';
 import { useAgentStore } from '@/store/agentStore';
 
 interface AgentResult {
   success?: boolean;
   docUrl?: string;
   gmailDraftId?: string;
+  needsAuth?: boolean;
+  redirectUrl?: string;
   error?: string;
 }
 
@@ -32,6 +23,7 @@ export default function Home() {
   const [email, setEmail] = useState('');
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<AgentResult | null>(null);
+  const [authRedirectUrl, setAuthRedirectUrl] = useState<string | null>(null);
   const { userId, logs, addLog, clearLogs } = useAgentStore();
 
 
@@ -55,6 +47,23 @@ export default function Home() {
 
     const data: AgentResult = await res.json();
 
+    if (data.needsAuth) {
+      addLog('AUTH', 'Google authorization required. Completing OAuth flow...');
+      setAuthRedirectUrl(data.redirectUrl ?? null);
+
+      if (data.redirectUrl && typeof window !== 'undefined') {
+        const newWindow = window.open(data.redirectUrl, '_blank', 'noopener');
+        if (!newWindow) {
+          addLog('AUTH', 'Popup blocked. Use the button below to finish connecting.');
+        }
+      }
+
+      setRunning(false);
+      return;
+    }
+
+    setAuthRedirectUrl(null);
+
     if (data.success) {
       addLog('COMPLETE', 'Research complete!');
       setResult(data);
@@ -67,6 +76,24 @@ export default function Home() {
   };
 
   const disableRun = running || !query.trim();
+  const authStatus = authRedirectUrl
+    ? {
+        badge: 'Action Required',
+        message: 'Please finish connecting your Google account to proceed.'
+      }
+    : {
+        badge: 'Ready',
+        message: 'Google auth handled automatically when you run the agent.'
+      };
+  const authBadgeClass = authRedirectUrl
+    ? 'bg-amber-500/20 text-amber-800'
+    : 'bg-emerald-500/15 text-emerald-500';
+
+  const openAuthWindow = () => {
+    if (authRedirectUrl && typeof window !== 'undefined') {
+      window.open(authRedirectUrl, '_blank', 'noopener');
+    }
+  };
 
   const formattedLogs = useMemo(() => {
     if (!logs.length) return [];
@@ -112,16 +139,14 @@ export default function Home() {
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Authentication</p>
-                  <p className="text-lg font-semibold text-foreground">
-                    Server-Side OAuth
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Google auth handled automatically when you run the agent.
-                  </p>
+                  <p className="text-lg font-semibold text-foreground">Server-Side OAuth</p>
+                  <p className="text-xs text-muted-foreground">{authStatus.message}</p>
                 </div>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1 text-sm font-medium text-emerald-500">
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium ${authBadgeClass}`}
+                >
                   <Activity className="size-4" />
-                  Ready
+                  {authStatus.badge}
                 </span>
               </div>
             </div>
@@ -162,6 +187,23 @@ export default function Home() {
                   </Button>
                 </div>
               </form>
+              {authRedirectUrl && (
+                <div className="rounded-3xl border border-dashed border-amber-400/60 bg-amber-50/40 p-6 text-sm text-amber-900">
+                  <p className="font-semibold">Finish Google authorization</p>
+                  <p className="mt-2 text-amber-800">
+                    We opened a new tab for Google OAuth. If you didn&apos;t see it, click below to launch
+                    the consent flow again, then rerun the agent.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="mt-4 border-amber-400 text-amber-900 hover:bg-amber-100"
+                    onClick={openAuthWindow}
+                  >
+                    Continue Google Auth
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 

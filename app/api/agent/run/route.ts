@@ -55,7 +55,14 @@ export async function POST(req: Request) {
 
   try {
     // Get or create connection
-    const connectionId = await getOrCreateConnection(userId, GMAIL_AUTH_CONFIG_ID);
+    const authResult = await getOrCreateConnection(userId, GMAIL_AUTH_CONFIG_ID);
+
+    if (authResult.needsAuth) {
+      return NextResponse.json({
+        needsAuth: true,
+        redirectUrl: authResult.redirectUrl
+      });
+    }
 
     // Create graph with composio instance
     const graph = createResearchGraph(composio, userId, recipientEmail);
