@@ -9,23 +9,29 @@ const EXA_TOOL_SLUG = 'EXA_SEARCH';
 export async function exaSearch(
   state: AgentStateType,
   composio: Composio,
-  userId: string
+  userId: string,
+  connectedAccountId?: string
 ): Promise<Partial<AgentStateType>> {
   if (state.status === 'error') {
     return {};
   }
 
   console.log('[EXA_SEARCH] Searching for:', state.question);
+  console.log('[EXA_SEARCH] Connected account ID:', connectedAccountId);
 
   const searchResult = await retryAsync(
     () =>
-      composio.tools.execute(EXA_TOOL_SLUG, {
-        userId,
-        arguments: {
-          query: state.question,
-          numResults: MAX_RESULTS
+      composio.tools.execute(
+        EXA_TOOL_SLUG,
+        {
+          userId,
+          ...(connectedAccountId && { connectedAccountId }),
+          arguments: {
+            query: state.question,
+            numResults: MAX_RESULTS
+          }
         }
-      }),
+      ),
     3
   );
 

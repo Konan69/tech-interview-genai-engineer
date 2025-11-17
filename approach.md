@@ -135,10 +135,24 @@ State object tracks:
 3. **Export formats**: PDF, Markdown in addition to Doc
 4. **Advanced search**: Filters, date ranges, source types
 
+## Sample Use Case
+
+### Example Query
+_"Please research the main sourcing platforms for data driven VCs. Return a list of platforms and a short description about them. Cite sources. After you're done, pre-draft an email to georgiy@enteroverdrive.com to share the doc."_
+
+### Expected Output
+1. Google Doc created with:
+   - Title: "Research - [query slug]"
+   - Answer section (2-5 paragraphs)
+   - Key Findings (bulleted list)
+   - Sources list with URLs
+2. Doc saved to target Drive folder
+3. Gmail draft pre-created to georgiy@enteroverdrive.com
+
 ## Testing Strategy
 
 ### Manual Testing
-1. End-to-end flow with sample query
+1. End-to-end flow with sample query (see above)
 2. Error cases: invalid folder, rate limits
 3. Edge cases: very long queries, no results found
 4. Different query types: factual, analytical, comparative

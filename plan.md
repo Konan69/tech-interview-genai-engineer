@@ -339,7 +339,7 @@ export default function Home() {
 - Add streaming logs via EventSource or polling
 - Wrap tool calls with error handling
 - Add timeouts to nodes (30s each, 3min global)
-- Test E2E with sample query
+- Test E2E with sample query: "Please research the main sourcing platforms for data driven VCs. Return a list of platforms and a short description about them. Cite sources. After you're done, pre-draft an email to georgiy@enteroverdrive.com to share the doc."
 
 ## Phase 7: Deploy (15 min)
 1. Set env vars in Vercel

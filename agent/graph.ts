@@ -12,10 +12,17 @@ import { finalize } from './nodes/finalize';
 const MAX_ITERATIONS = 2;
 const MIN_CONFIDENCE = 0.65;
 
-export function createResearchGraph(composio: Composio, userId: string, recipientEmail?: string) {
+export function createResearchGraph(
+  composio: Composio,
+  userId: string,
+  recipientEmail?: string,
+  exaConnectionId?: string
+) {
   const graph = new StateGraph(AgentState)
     .addNode('plan', planner)
-    .addNode('search', (state: AgentStateType) => exaSearch(state, composio, userId))
+    .addNode('search', (state: AgentStateType) =>
+      exaSearch(state, composio, userId, exaConnectionId)
+    )
     .addNode('summarize', summarizer)
     .addNode('compose', drafter)
     .addNode('save', (state: AgentStateType) => googleSaver(state, composio, userId))

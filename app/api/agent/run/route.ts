@@ -3,9 +3,13 @@ import { Composio } from '@composio/core';
 import { createResearchGraph } from '@/agent/graph';
 
 const GMAIL_AUTH_CONFIG_ID = 'ac_JXipOk43oHuc';
+const EXA_AUTH_CONFIG_ID = 'ac_PhR4VbLfO6Za';
 
 const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY
+  apiKey: process.env.COMPOSIO_API_KEY,
+  toolkitVersions: {
+    EXA: 'latest'
+  }
 });
 
 async function getOrCreateConnection(userId: string, authConfigId: string) {
@@ -18,9 +22,11 @@ async function getOrCreateConnection(userId: string, authConfigId: string) {
 
   // If connection exists, return it
   if (existingConnections.items && existingConnections.items.length > 0) {
-    console.log('[AUTH] Using existing connection:', existingConnections.items[0].id);
+    const connection = existingConnections.items[0];
+    console.log('[AUTH] Using existing connection:', connection.id);
+    console.log('[AUTH] Connection toolkit:', connection.toolkit?.slug);
     return {
-      connectionId: existingConnections.items[0].id,
+      connectionId: connection.id,
       needsAuth: false
     };
   }
@@ -54,18 +60,32 @@ export async function POST(req: Request) {
   }
 
   try {
-    // Get or create connection
-    const authResult = await getOrCreateConnection(userId, GMAIL_AUTH_CONFIG_ID);
+    // Get or create connections for required services
+    const gmailAuthResult = await getOrCreateConnection(userId, GMAIL_AUTH_CONFIG_ID);
+    const exaAuthResult = await getOrCreateConnection(userId, EXA_AUTH_CONFIG_ID);
 
-    if (authResult.needsAuth) {
+    if (gmailAuthResult.needsAuth || exaAuthResult.needsAuth) {
       return NextResponse.json({
         needsAuth: true,
-        redirectUrl: authResult.redirectUrl
+        redirectUrl: gmailAuthResult.redirectUrl || exaAuthResult.redirectUrl
       });
     }
 
-    // Create graph with composio instance
-    const graph = createResearchGraph(composio, userId, recipientEmail);
+    // Get the connected account to verify it's active
+    const exaConnection = await composio.connectedAccounts.get(exaAuthResult.connectionId!);
+    console.log('[AUTH] Exa connection details:', {
+      id: exaConnection.id,
+      status: exaConnection.status,
+      toolkit: exaConnection.toolkit?.slug
+    });
+
+    // Create graph with composio instance and connection IDs
+    const graph = createResearchGraph(
+      composio,
+      userId,
+      recipientEmail,
+      exaAuthResult.connectionId!
+    );
 
     const result = await graph.invoke({
       question,

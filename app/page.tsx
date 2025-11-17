@@ -159,7 +159,7 @@ export default function Home() {
                     id="query"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder="e.g. Compare Gemini 2.0 Flash to Claude 3.5 Sonnet for enterprise research automation"
+                    placeholder="Please research the main sourcing platforms for data driven VCs. Return a list of platforms and a short description about them. Cite sources. After you're done, pre-draft an email to georgiy@enteroverdrive.com to share the doc."
                   />
                 </div>
                 <div className="space-y-2">
@@ -169,7 +169,7 @@ export default function Home() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@company.com"
+                    placeholder="georgiy@enteroverdrive.com"
                   />
                 </div>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
